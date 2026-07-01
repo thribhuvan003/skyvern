@@ -1172,7 +1172,7 @@ async def test_register_pdf_uses_download_run_id_as_storage_key() -> None:
 
     block = PrintPageBlock.__new__(PrintPageBlock)
 
-    with patch("skyvern.forge.sdk.workflow.models.block.app") as mock_app:
+    with patch("skyvern.forge.sdk.workflow.models.misc_blocks.app") as mock_app:
         mock_app.STORAGE.save_downloaded_files = AsyncMock()
         mock_app.STORAGE.get_downloaded_files = AsyncMock(return_value=[])
 
@@ -1193,7 +1193,7 @@ async def test_register_pdf_defaults_to_workflow_run_id() -> None:
 
     block = PrintPageBlock.__new__(PrintPageBlock)
 
-    with patch("skyvern.forge.sdk.workflow.models.block.app") as mock_app:
+    with patch("skyvern.forge.sdk.workflow.models.misc_blocks.app") as mock_app:
         mock_app.STORAGE.save_downloaded_files = AsyncMock()
         mock_app.STORAGE.get_downloaded_files = AsyncMock(return_value=[])
 
@@ -1260,9 +1260,9 @@ async def test_print_page_block_threads_resolved_id_to_all_sinks(tmp_path) -> No
             new_callable=AsyncMock,
             return_value=(None, None),
         ),
-        patch("skyvern.forge.sdk.workflow.models.block.get_download_dir", side_effect=fake_get_download_dir),
-        patch("skyvern.forge.sdk.workflow.models.block.skyvern_context.current", return_value=ctx),
-        patch("skyvern.forge.sdk.workflow.models.block.app") as mock_app,
+        patch("skyvern.forge.sdk.workflow.models.misc_blocks.get_download_dir", side_effect=fake_get_download_dir),
+        patch("skyvern.forge.sdk.workflow.models.misc_blocks.skyvern_context.current", return_value=ctx),
+        patch("skyvern.forge.sdk.workflow.models.misc_blocks.app") as mock_app,
     ):
         mock_app.STORAGE.get_downloaded_files = AsyncMock(side_effect=fake_get_downloaded_files)
         result = await block.execute(
