@@ -72,7 +72,9 @@ async def test_jinja_rendered_prompt_condition_keeps_browser_session() -> None:
     evaluation_context.build_llm_safe_context_snapshot = MagicMock(return_value={"Single_or_Joint__c": "Joint"})  # type: ignore[method-assign]
 
     with (
-        patch("skyvern.forge.sdk.workflow.models.branching.prompt_engine.load_prompt", return_value="goal") as mock_prompt,
+        patch(
+            "skyvern.forge.sdk.workflow.models.branching.prompt_engine.load_prompt", return_value="goal"
+        ) as mock_prompt,
         patch("skyvern.forge.sdk.workflow.models.branching.ExtractionBlock") as mock_extraction_cls,
     ):
         mock_extraction = MagicMock()
@@ -115,7 +117,9 @@ async def test_pure_natlang_prompt_condition_uses_browser_session_and_context() 
     evaluation_context.build_llm_safe_context_snapshot = MagicMock(return_value={"plan": "premium"})  # type: ignore[method-assign]
 
     with (
-        patch("skyvern.forge.sdk.workflow.models.branching.prompt_engine.load_prompt", return_value="goal") as mock_prompt,
+        patch(
+            "skyvern.forge.sdk.workflow.models.branching.prompt_engine.load_prompt", return_value="goal"
+        ) as mock_prompt,
         patch("skyvern.forge.sdk.workflow.models.branching.ExtractionBlock") as mock_extraction_cls,
     ):
         mock_extraction = MagicMock()
@@ -378,7 +382,9 @@ async def test_empty_param_produces_explicit_marker_in_prompt_evaluation() -> No
     evaluation_context.build_llm_safe_context_snapshot = MagicMock(return_value={"test_parameter": ""})  # type: ignore[method-assign]
 
     with (
-        patch("skyvern.forge.sdk.workflow.models.branching.prompt_engine.load_prompt", return_value="goal") as mock_prompt,
+        patch(
+            "skyvern.forge.sdk.workflow.models.branching.prompt_engine.load_prompt", return_value="goal"
+        ) as mock_prompt,
         patch("skyvern.forge.sdk.workflow.models.branching.ExtractionBlock") as mock_extraction_cls,
     ):
         mock_extraction = MagicMock()

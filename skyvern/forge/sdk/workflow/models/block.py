@@ -9079,13 +9079,7 @@ def get_all_blocks(blocks: list[BlockTypeVar]) -> list[BlockTypeVar]:
     return all_blocks
 
 
-# Late import: google_sheets_blocks imports Block from this module, so top-level import would cycle.
-from skyvern.forge.sdk.workflow.models.google_sheets_blocks import (  # noqa: E402
-    GoogleSheetsReadBlock,
-    GoogleSheetsWriteBlock,
-)
-from skyvern.forge.sdk.workflow.models.pdf_fill_block import PdfFillBlock  # noqa: E402
-
+# isort: off
 # Late import: branching imports Block/ExtractionBlock from this module, so a top-level import would
 # cycle. ``_evaluate_prompt_branch_conditions_batch`` is re-exported because WhileLoopBlock (which
 # stays here) drives while-loop conditions through it.
@@ -9105,6 +9099,14 @@ from skyvern.forge.sdk.workflow.models.branching import (  # noqa: E402
     _make_empty_params_explicit,  # noqa: F401 - re-exported for facade compatibility
     _trim_branch_evaluations,  # noqa: F401 - re-exported for facade compatibility
 )
+
+# Late import: google_sheets_blocks imports Block from this module, so top-level import would cycle.
+from skyvern.forge.sdk.workflow.models.google_sheets_blocks import (  # noqa: E402
+    GoogleSheetsReadBlock,
+    GoogleSheetsWriteBlock,
+)
+from skyvern.forge.sdk.workflow.models.pdf_fill_block import PdfFillBlock  # noqa: E402
+# isort: on
 
 BlockSubclasses = Union[
     ConditionalBlock,
