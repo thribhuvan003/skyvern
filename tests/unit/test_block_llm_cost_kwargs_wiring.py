@@ -1,6 +1,6 @@
-"""AST guard: every awaited LLM handler call inside the six
-block-scoped methods below must pass both `workflow_run_block_id=`
-and `organization_id=`. Catches call-site wiring regressions.
+"""AST guard: every awaited LLM handler call inside the block-scoped
+methods below must pass both `workflow_run_block_id=` and `organization_id=`.
+Catches call-site wiring regressions.
 """
 
 from __future__ import annotations
@@ -8,8 +8,10 @@ from __future__ import annotations
 import ast
 import pathlib
 
-BLOCK_PY = (
-    pathlib.Path(__file__).resolve().parents[2] / "skyvern" / "forge" / "sdk" / "workflow" / "models" / "block.py"
+WORKFLOW_MODELS_DIR = pathlib.Path(__file__).resolve().parents[2] / "skyvern" / "forge" / "sdk" / "workflow" / "models"
+BLOCK_MODULES = (
+    WORKFLOW_MODELS_DIR / "block.py",
+    WORKFLOW_MODELS_DIR / "misc_blocks.py",
 )
 
 # Methods that make block-scoped LLM calls. Each must pass
@@ -60,26 +62,27 @@ def _kwarg_names(call: ast.Call) -> set[str]:
 
 
 def test_every_block_scoped_llm_call_passes_both_cost_attribution_kwargs() -> None:
-    tree = ast.parse(BLOCK_PY.read_text())
-
     offenders: list[str] = []
     methods_with_calls: set[str] = set()
 
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.AsyncFunctionDef):
-            continue
-        if node.name not in BLOCK_ATTRIBUTED_METHODS:
-            continue
+    for module_path in BLOCK_MODULES:
+        tree = ast.parse(module_path.read_text())
 
-        for call in _find_llm_calls_in_method(node):
-            methods_with_calls.add(node.name)
-            kwargs = _kwarg_names(call)
-            missing = {"workflow_run_block_id", "organization_id"} - kwargs
-            if missing:
-                offenders.append(
-                    f"{node.name} @ line {call.lineno}: missing {sorted(missing)} "
-                    f"on LLM handler call (kwargs present: {sorted(kwargs)})"
-                )
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.AsyncFunctionDef):
+                continue
+            if node.name not in BLOCK_ATTRIBUTED_METHODS:
+                continue
+
+            for call in _find_llm_calls_in_method(node):
+                methods_with_calls.add(node.name)
+                kwargs = _kwarg_names(call)
+                missing = {"workflow_run_block_id", "organization_id"} - kwargs
+                if missing:
+                    offenders.append(
+                        f"{module_path.name}:{node.name} @ line {call.lineno}: missing {sorted(missing)} "
+                        f"on LLM handler call (kwargs present: {sorted(kwargs)})"
+                    )
 
     # Sanity: every method in BLOCK_ATTRIBUTED_METHODS must have at least one
     # awaited LLM call. If our name-fragment matcher misses (e.g. a handler

@@ -6,6 +6,7 @@ import json
 import os
 import re
 import smtplib
+import sys
 from collections import defaultdict
 from datetime import datetime, timezone
 from email.message import EmailMessage
@@ -82,6 +83,7 @@ from skyvern.utils.url_validators import prepend_scheme_and_validate_url
 from skyvern.webeye.utils.page import SkyvernFrame
 
 LOG = structlog.get_logger()
+_BLOCK_MODULE = "skyvern.forge.sdk.workflow.models.block"
 
 
 class TextPromptBlock(Block):
@@ -833,7 +835,13 @@ class TaskV2Block(Block):
         # Scope downloaded files to this block only.
         block_context = skyvern_context.current()
         if block_context:
-            await capture_block_download_baseline(block_context, organization_id or "", workflow_run_id, self.label)
+            await capture_block_download_baseline(
+                block_context,
+                organization_id or "",
+                workflow_run_id,
+                self.label,
+                storage=app.STORAGE,
+            )
 
         workflow_run_context = self.get_workflow_run_context(workflow_run_id)
 
@@ -1474,7 +1482,8 @@ class HttpRequestBlock(Block):
                 files=workflow_run_context.mask_secrets_in_data(self.files),
             )
 
-            status_code, response_headers, response_body = await aiohttp_request(
+            block_module = cast(Any, sys.modules[_BLOCK_MODULE])
+            status_code, response_headers, response_body = await block_module.aiohttp_request(
                 method=self.method,
                 url=self.url,
                 headers=self.headers,
@@ -1741,7 +1750,13 @@ class PrintPageBlock(Block):
         # Scope downloaded files to this block only.
         block_context = skyvern_context.current()
         if block_context:
-            await capture_block_download_baseline(block_context, organization_id or "", workflow_run_id, self.label)
+            await capture_block_download_baseline(
+                block_context,
+                organization_id or "",
+                workflow_run_id,
+                self.label,
+                storage=app.STORAGE,
+            )
 
         resolved_download_id = resolve_run_download_id(block_context, fallback_run_id=workflow_run_id)
         browser_state = await self.get_or_create_browser_state(
@@ -2272,3 +2287,21 @@ class WorkflowTriggerBlock(Block):
             workflow_run_block_id=workflow_run_block_id,
             organization_id=organization_id,
         )
+
+
+_block_module = cast(Any, sys.modules[_BLOCK_MODULE])
+_block_module._install_misc_block_exports(
+    aiohttp_request_func=aiohttp_request,
+    apply_secret_response_paths=_apply_secret_response_paths,
+    http_request_block=HttpRequestBlock,
+    is_secret_scalar=_is_secret_scalar,
+    print_page_block=PrintPageBlock,
+    register_and_replace_secret_response_path=_register_and_replace_secret_response_path,
+    send_email_block=SendEmailBlock,
+    secret_path_suffix=_secret_path_suffix,
+    secret_response_body_redacted=SECRET_RESPONSE_BODY_REDACTED,
+    task_v2_block=TaskV2Block,
+    text_prompt_block=TextPromptBlock,
+    wait_block=WaitBlock,
+    workflow_trigger_block=WorkflowTriggerBlock,
+)

@@ -11,6 +11,7 @@ import keyword
 import os
 import re
 import shutil
+import sys
 import textwrap
 import uuid
 import zipfile
@@ -18,7 +19,7 @@ from collections import deque
 from datetime import date, datetime, time, timezone
 from pathlib import Path, PurePosixPath
 from types import SimpleNamespace
-from typing import Annotated, Any, Awaitable, Callable, ClassVar, Literal, Union
+from typing import TYPE_CHECKING, Annotated, Any, Awaitable, Callable, ClassVar, Literal, Union
 from urllib.parse import quote, urlparse
 
 import docx
@@ -113,7 +114,8 @@ from skyvern.forge.sdk.workflow.loop_download_filter import (
     filter_downloaded_files_for_current_iteration,
     to_downloaded_file_signature,
 )
-from skyvern.forge.sdk.workflow.models._jinja import (
+from skyvern.forge.sdk.workflow.models._jinja import (  # noqa: F401 -- re-exported for callers importing it from this facade module
+    _JSON_TYPE_MARKER,
     _json_type_filter,
 )
 from skyvern.forge.sdk.workflow.models.code_block_recorder import (
@@ -191,6 +193,8 @@ async def capture_block_download_baseline(
     organization_id: str,
     workflow_run_id: str,
     block_label: str,
+    *,
+    storage: Any | None = None,
 ) -> None:
     """Snapshot the files already downloaded before this block runs.
 
@@ -199,9 +203,10 @@ async def capture_block_download_baseline(
     block — including each block inside a loop iteration — so sibling download-producing
     blocks don't inherit one another's files. Best-effort: cleared on timeout/error.
     """
+    download_storage = storage or app.STORAGE
     try:
         async with asyncio.timeout(GET_DOWNLOADED_FILES_TIMEOUT):
-            baseline_files = await app.STORAGE.get_downloaded_files(
+            baseline_files = await download_storage.get_downloaded_files(
                 organization_id=organization_id,
                 run_id=resolve_run_download_id(context, fallback_run_id=workflow_run_id),
             )
@@ -8589,53 +8594,187 @@ def get_all_blocks(blocks: list[BlockTypeVar]) -> list[BlockTypeVar]:
     return all_blocks
 
 
+_MISC_BLOCK_MODULE = "skyvern.forge.sdk.workflow.models.misc_blocks"
+_MISC_BLOCK_EXPORT_NAMES = (
+    "HttpRequestBlock",
+    "PrintPageBlock",
+    "SECRET_RESPONSE_BODY_REDACTED",
+    "SendEmailBlock",
+    "TaskV2Block",
+    "TextPromptBlock",
+    "WaitBlock",
+    "WorkflowTriggerBlock",
+    "_apply_secret_response_paths",
+    "_is_secret_scalar",
+    "_register_and_replace_secret_response_path",
+    "_secret_path_suffix",
+    "aiohttp_request",
+)
+
+
+def _install_misc_block_exports(
+    *,
+    aiohttp_request_func: Any,
+    apply_secret_response_paths: Any,
+    http_request_block: Any,
+    is_secret_scalar: Any,
+    print_page_block: Any,
+    register_and_replace_secret_response_path: Any,
+    send_email_block: Any,
+    secret_path_suffix: Any,
+    secret_response_body_redacted: str,
+    task_v2_block: Any,
+    text_prompt_block: Any,
+    wait_block: Any,
+    workflow_trigger_block: Any,
+) -> None:
+    """Install blocks that live in ``misc_blocks`` while keeping this module as the facade."""
+    globals().update(
+        {
+            "HttpRequestBlock": http_request_block,
+            "PrintPageBlock": print_page_block,
+            "SECRET_RESPONSE_BODY_REDACTED": secret_response_body_redacted,
+            "SendEmailBlock": send_email_block,
+            "TaskV2Block": task_v2_block,
+            "TextPromptBlock": text_prompt_block,
+            "WaitBlock": wait_block,
+            "WorkflowTriggerBlock": workflow_trigger_block,
+            "_apply_secret_response_paths": apply_secret_response_paths,
+            "_is_secret_scalar": is_secret_scalar,
+            "_register_and_replace_secret_response_path": register_and_replace_secret_response_path,
+            "_secret_path_suffix": secret_path_suffix,
+            "aiohttp_request": aiohttp_request_func,
+        }
+    )
+
+    block_subclasses = Union[
+        ConditionalBlock,
+        ForLoopBlock,
+        WhileLoopBlock,
+        TaskBlock,
+        CodeBlock,
+        text_prompt_block,
+        DownloadToS3Block,
+        UploadToS3Block,
+        send_email_block,
+        FileParserBlock,
+        PDFParserBlock,
+        ValidationBlock,
+        ActionBlock,
+        NavigationBlock,
+        ExtractionBlock,
+        LoginBlock,
+        wait_block,
+        HumanInteractionBlock,
+        FileDownloadBlock,
+        UrlBlock,
+        task_v2_block,
+        FileUploadBlock,
+        http_request_block,
+        print_page_block,
+        workflow_trigger_block,
+        GoogleSheetsReadBlock,
+        GoogleSheetsWriteBlock,
+        PdfFillBlock,
+    ]  # type: ignore[valid-type]
+    globals()["BlockSubclasses"] = block_subclasses
+    globals()["BlockTypeVar"] = Annotated[block_subclasses, Field(discriminator="block_type")]  # type: ignore[valid-type]
+
+
+def _is_misc_blocks_importing_block() -> bool:
+    misc_blocks = sys.modules.get(_MISC_BLOCK_MODULE)
+    return misc_blocks is not None and not all(hasattr(misc_blocks, name) for name in _MISC_BLOCK_EXPORT_NAMES)
+
+
 # Late import: google_sheets_blocks imports Block from this module, so top-level import would cycle.
 from skyvern.forge.sdk.workflow.models.google_sheets_blocks import (  # noqa: E402
     GoogleSheetsReadBlock,
     GoogleSheetsWriteBlock,
 )
 from skyvern.forge.sdk.workflow.models.pdf_fill_block import PdfFillBlock  # noqa: E402
-from skyvern.forge.sdk.workflow.models.misc_blocks import (  # noqa: E402
-    HttpRequestBlock,
-    PrintPageBlock,
-    SendEmailBlock,
-    TaskV2Block,
-    TextPromptBlock,
-    WaitBlock,
-    WorkflowTriggerBlock,
-)
 
-BlockSubclasses = Union[
-    ConditionalBlock,
-    ForLoopBlock,
-    WhileLoopBlock,
-    TaskBlock,
-    CodeBlock,
-    TextPromptBlock,
-    DownloadToS3Block,
-    UploadToS3Block,
-    SendEmailBlock,
-    FileParserBlock,
-    PDFParserBlock,
-    ValidationBlock,
-    ActionBlock,
-    NavigationBlock,
-    ExtractionBlock,
-    LoginBlock,
-    WaitBlock,
-    HumanInteractionBlock,
-    FileDownloadBlock,
-    UrlBlock,
-    TaskV2Block,
-    FileUploadBlock,
-    HttpRequestBlock,
-    PrintPageBlock,
-    WorkflowTriggerBlock,
-    GoogleSheetsReadBlock,
-    GoogleSheetsWriteBlock,
-    PdfFillBlock,
-]
-BlockTypeVar = Annotated[BlockSubclasses, Field(discriminator="block_type")]
+if TYPE_CHECKING:
+    from skyvern.forge.sdk.workflow.models.misc_blocks import (
+        SECRET_RESPONSE_BODY_REDACTED,
+        HttpRequestBlock,
+        PrintPageBlock,
+        SendEmailBlock,
+        TaskV2Block,
+        TextPromptBlock,
+        WaitBlock,
+        WorkflowTriggerBlock,
+        _apply_secret_response_paths,
+        _is_secret_scalar,
+        _register_and_replace_secret_response_path,
+        _secret_path_suffix,
+        aiohttp_request,
+    )
+
+if not _is_misc_blocks_importing_block():
+    from skyvern.forge.sdk.workflow.models.misc_blocks import (  # noqa: E402
+        SECRET_RESPONSE_BODY_REDACTED,
+        HttpRequestBlock,
+        PrintPageBlock,
+        SendEmailBlock,
+        TaskV2Block,
+        TextPromptBlock,
+        WaitBlock,
+        WorkflowTriggerBlock,
+        _apply_secret_response_paths,
+        _is_secret_scalar,
+        _register_and_replace_secret_response_path,
+        _secret_path_suffix,
+        aiohttp_request,
+    )
+
+    _install_misc_block_exports(
+        aiohttp_request_func=aiohttp_request,
+        apply_secret_response_paths=_apply_secret_response_paths,
+        http_request_block=HttpRequestBlock,
+        is_secret_scalar=_is_secret_scalar,
+        print_page_block=PrintPageBlock,
+        register_and_replace_secret_response_path=_register_and_replace_secret_response_path,
+        send_email_block=SendEmailBlock,
+        secret_path_suffix=_secret_path_suffix,
+        secret_response_body_redacted=SECRET_RESPONSE_BODY_REDACTED,
+        task_v2_block=TaskV2Block,
+        text_prompt_block=TextPromptBlock,
+        wait_block=WaitBlock,
+        workflow_trigger_block=WorkflowTriggerBlock,
+    )
+
+if TYPE_CHECKING:
+    BlockSubclasses = Union[
+        ConditionalBlock,
+        ForLoopBlock,
+        WhileLoopBlock,
+        TaskBlock,
+        CodeBlock,
+        TextPromptBlock,
+        DownloadToS3Block,
+        UploadToS3Block,
+        SendEmailBlock,
+        FileParserBlock,
+        PDFParserBlock,
+        ValidationBlock,
+        ActionBlock,
+        NavigationBlock,
+        ExtractionBlock,
+        LoginBlock,
+        WaitBlock,
+        HumanInteractionBlock,
+        FileDownloadBlock,
+        UrlBlock,
+        TaskV2Block,
+        FileUploadBlock,
+        HttpRequestBlock,
+        PrintPageBlock,
+        WorkflowTriggerBlock,
+        GoogleSheetsReadBlock,
+        GoogleSheetsWriteBlock,
+        PdfFillBlock,
+    ]
+    BlockTypeVar = Annotated[BlockSubclasses, Field(discriminator="block_type")]
 
 
 BranchCriteriaSubclasses = Union[JinjaBranchCriteria, PromptBranchCriteria]
