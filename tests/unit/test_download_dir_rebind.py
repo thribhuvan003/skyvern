@@ -622,11 +622,11 @@ async def test_file_upload_block_empty_scan_without_registered_downloads_succeed
             FileUploadBlock, "build_block_result", new_callable=AsyncMock, return_value=sentinel
         ) as mock_result,
         patch(
-            "skyvern.forge.sdk.workflow.models.block.get_path_for_workflow_download_directory",
+            "skyvern.forge.sdk.workflow.models.storage_blocks.get_path_for_workflow_download_directory",
             return_value=empty_dir,
         ),
-        patch("skyvern.forge.sdk.workflow.models.block.skyvern_context.current", return_value=None),
-        patch("skyvern.forge.sdk.workflow.models.block.app") as mock_app,
+        patch("skyvern.forge.sdk.workflow.models.storage_blocks.skyvern_context.current", return_value=None),
+        patch("skyvern.forge.sdk.workflow.models.storage_blocks.app") as mock_app,
     ):
         mock_app.STORAGE.get_downloaded_files = AsyncMock(return_value=[])
         mock_app.AGENT_FUNCTION.upload_file_to_customer_storage = AsyncMock()
@@ -675,11 +675,11 @@ async def test_file_upload_block_empty_scan_with_registered_downloads_fails(tmp_
             FileUploadBlock, "build_block_result", new_callable=AsyncMock, return_value=sentinel
         ) as mock_result,
         patch(
-            "skyvern.forge.sdk.workflow.models.block.get_path_for_workflow_download_directory",
+            "skyvern.forge.sdk.workflow.models.storage_blocks.get_path_for_workflow_download_directory",
             return_value=empty_dir,
         ),
-        patch("skyvern.forge.sdk.workflow.models.block.skyvern_context.current", return_value=None),
-        patch("skyvern.forge.sdk.workflow.models.block.app") as mock_app,
+        patch("skyvern.forge.sdk.workflow.models.storage_blocks.skyvern_context.current", return_value=None),
+        patch("skyvern.forge.sdk.workflow.models.storage_blocks.app") as mock_app,
     ):
         mock_app.STORAGE.get_downloaded_files = AsyncMock(
             return_value=[FileInfo(url="https://example.com/invoice.pdf", filename="invoice.pdf")]
@@ -733,11 +733,11 @@ async def test_file_upload_block_empty_scan_with_alternate_download_dir_files_fa
             FileUploadBlock, "build_block_result", new_callable=AsyncMock, return_value=sentinel
         ) as mock_result,
         patch(
-            "skyvern.forge.sdk.workflow.models.block.get_path_for_workflow_download_directory",
+            "skyvern.forge.sdk.workflow.models.storage_blocks.get_path_for_workflow_download_directory",
             side_effect=get_download_dir_for_run_id,
         ),
-        patch("skyvern.forge.sdk.workflow.models.block.skyvern_context.current", return_value=context),
-        patch("skyvern.forge.sdk.workflow.models.block.app") as mock_app,
+        patch("skyvern.forge.sdk.workflow.models.storage_blocks.skyvern_context.current", return_value=context),
+        patch("skyvern.forge.sdk.workflow.models.storage_blocks.app") as mock_app,
     ):
         mock_app.STORAGE.get_downloaded_files = AsyncMock(return_value=[])
         mock_app.AGENT_FUNCTION.upload_file_to_customer_storage = AsyncMock()
@@ -793,11 +793,11 @@ async def test_file_upload_block_empty_scan_with_too_many_alternate_files_report
             FileUploadBlock, "build_block_result", new_callable=AsyncMock, return_value=sentinel
         ) as mock_result,
         patch(
-            "skyvern.forge.sdk.workflow.models.block.get_path_for_workflow_download_directory",
+            "skyvern.forge.sdk.workflow.models.storage_blocks.get_path_for_workflow_download_directory",
             side_effect=get_download_dir_for_run_id,
         ),
-        patch("skyvern.forge.sdk.workflow.models.block.skyvern_context.current", return_value=context),
-        patch("skyvern.forge.sdk.workflow.models.block.app") as mock_app,
+        patch("skyvern.forge.sdk.workflow.models.storage_blocks.skyvern_context.current", return_value=context),
+        patch("skyvern.forge.sdk.workflow.models.storage_blocks.app") as mock_app,
     ):
         mock_app.STORAGE.get_downloaded_files = AsyncMock(return_value=[])
         mock_app.AGENT_FUNCTION.upload_file_to_customer_storage = AsyncMock()
@@ -844,11 +844,11 @@ async def test_file_upload_block_empty_scan_with_browser_session_downloads_fails
             FileUploadBlock, "build_block_result", new_callable=AsyncMock, return_value=sentinel
         ) as mock_result,
         patch(
-            "skyvern.forge.sdk.workflow.models.block.get_path_for_workflow_download_directory",
+            "skyvern.forge.sdk.workflow.models.storage_blocks.get_path_for_workflow_download_directory",
             return_value=empty_dir,
         ),
-        patch("skyvern.forge.sdk.workflow.models.block.skyvern_context.current", return_value=None),
-        patch("skyvern.forge.sdk.workflow.models.block.app") as mock_app,
+        patch("skyvern.forge.sdk.workflow.models.storage_blocks.skyvern_context.current", return_value=None),
+        patch("skyvern.forge.sdk.workflow.models.storage_blocks.app") as mock_app,
     ):
         mock_app.STORAGE.list_downloaded_files_in_browser_session = AsyncMock(
             return_value=["s3://downloads/session/invoice.pdf"]
@@ -901,11 +901,11 @@ async def test_file_upload_block_empty_scan_registered_download_timeout_fails_wi
             FileUploadBlock, "build_block_result", new_callable=AsyncMock, return_value=sentinel
         ) as mock_result,
         patch(
-            "skyvern.forge.sdk.workflow.models.block.get_path_for_workflow_download_directory",
+            "skyvern.forge.sdk.workflow.models.storage_blocks.get_path_for_workflow_download_directory",
             return_value=empty_dir,
         ),
-        patch("skyvern.forge.sdk.workflow.models.block.skyvern_context.current", return_value=None),
-        patch("skyvern.forge.sdk.workflow.models.block.app") as mock_app,
+        patch("skyvern.forge.sdk.workflow.models.storage_blocks.skyvern_context.current", return_value=None),
+        patch("skyvern.forge.sdk.workflow.models.storage_blocks.app") as mock_app,
     ):
         mock_app.STORAGE.get_downloaded_files = AsyncMock(side_effect=asyncio.TimeoutError)
         result = await block.execute(
@@ -948,11 +948,11 @@ async def test_file_upload_block_continue_on_empty_succeeds(tmp_path) -> None:
             FileUploadBlock, "build_block_result", new_callable=AsyncMock, return_value=sentinel
         ) as mock_result,
         patch(
-            "skyvern.forge.sdk.workflow.models.block.get_path_for_workflow_download_directory",
+            "skyvern.forge.sdk.workflow.models.storage_blocks.get_path_for_workflow_download_directory",
             return_value=empty_dir,
         ),
-        patch("skyvern.forge.sdk.workflow.models.block.skyvern_context.current", return_value=None),
-        patch("skyvern.forge.sdk.workflow.models.block.app") as mock_app,
+        patch("skyvern.forge.sdk.workflow.models.storage_blocks.skyvern_context.current", return_value=None),
+        patch("skyvern.forge.sdk.workflow.models.storage_blocks.app") as mock_app,
     ):
         mock_app.AGENT_FUNCTION.upload_file_to_customer_storage = AsyncMock()
         result = await block.execute(
@@ -1000,11 +1000,11 @@ async def test_file_upload_block_uploads_downloads_to_google_drive(tmp_path) -> 
             FileUploadBlock, "build_block_result", new_callable=AsyncMock, return_value=sentinel
         ) as mock_result,
         patch(
-            "skyvern.forge.sdk.workflow.models.block.get_path_for_workflow_download_directory",
+            "skyvern.forge.sdk.workflow.models.storage_blocks.get_path_for_workflow_download_directory",
             return_value=download_dir,
         ),
-        patch("skyvern.forge.sdk.workflow.models.block.skyvern_context.current", return_value=None),
-        patch("skyvern.forge.sdk.workflow.models.block.app") as mock_app,
+        patch("skyvern.forge.sdk.workflow.models.storage_blocks.skyvern_context.current", return_value=None),
+        patch("skyvern.forge.sdk.workflow.models.storage_blocks.app") as mock_app,
     ):
         mock_app.AGENT_FUNCTION.get_google_workspace_credentials = AsyncMock(return_value=SimpleNamespace(token="at-1"))
         mock_app.AGENT_FUNCTION.upload_file_to_customer_storage = AsyncMock(
