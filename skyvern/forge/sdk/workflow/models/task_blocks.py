@@ -752,7 +752,6 @@ class TaskBlock(BaseTaskBlock):
     block_type: Literal[BlockType.TASK] = BlockType.TASK  # type: ignore
 
 
-
 class HumanInteractionBlock(BaseTaskBlock):
     """
     A block for human/agent interaction.
@@ -1077,4 +1076,3 @@ class UrlBlock(BaseTaskBlock):
     # Parameter 1 of Literal[...] cannot be of type "Any"
     block_type: Literal[BlockType.GOTO_URL] = BlockType.GOTO_URL  # type: ignore
     url: str
-
